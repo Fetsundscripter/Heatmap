@@ -9,6 +9,7 @@ let yScale
 
 let minYear
 let maxYear
+let numberOfYears = maxYear - minYear
 
 let width = 1200
 let height = 600
@@ -18,9 +19,11 @@ let canvas = d3.select('#canvas')
 canvas.attr('width', width)
 canvas.attr('height', height)
 
+let tooltip = d3.select('#tooltip')
+
 let generateScales = () => {
 
-    let minYear = d3.min(values, (item) =>{
+    minYear = d3.min(values, (item) =>{
         return item['year']
     })
 
@@ -29,7 +32,7 @@ let generateScales = () => {
     })
 
     xScale = d3.scaleLinear()
-               .domain([minYear, maxYear])
+               .domain([minYear, maxYear + 1])
                .range([padding, width - padding])
 
     yScale = d3.scaleTime()
@@ -69,12 +72,50 @@ let drawCells = () => {
           .attr('y', (item) =>{
             return yScale(new Date(0, item['month'] -1, 0, 0, 0, 0, 0))
           })
+          .attr('width', (item) =>{
+            let numberOfYears = maxYear - minYear
+            return (width - (2*padding)) / numberOfYears
+          })
+          .attr('x', (item) =>{
+            return xScale(item['year'])
+          })
+          .on('mouseover', (item) =>{
+            tooltip.transition()
+                   .style('visibility', 'visible')
+
+                let monthNames = [
+                    'January',
+                    'February',
+                    'March',
+                    'April',
+                    'May',
+                    'June',
+                    'July',
+                    'August',
+                    'September',
+                    'October',
+                    'November',
+                    'December'
+                ]
+
+            tooltip.text(item['year'] + ' ' + monthNames[item['month'] - 1]
+                 + ' - ' + (baseTemp + item['variance']) + ' (' + item['variance'] + ')')
+
+            tooltip.attr('data-year', item['year'])
+          })
+          .on('mouseout', (item) =>{
+            tooltip.transition()
+                   .style('visibility', 'hidden')
+          })
 }
 
 let drawAxes = () => {
 
     let xAxis = d3.axisBottom(xScale)
+                  .tickFormat(d3.format('d'))
+
     let yAxis = d3.axisLeft(yScale)
+                  .tickFormat(d3.timeFormat('%B'))
 
     canvas.append('g')
           .call(xAxis)
